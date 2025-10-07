@@ -1,34 +1,33 @@
 package com.chalabysolutions.toepenscorebord.data.database
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.chalabysolutions.toepenscorebord.data.dao.GameRoundDao
+import com.chalabysolutions.toepenscorebord.data.dao.SessionDao
 import com.chalabysolutions.toepenscorebord.data.dao.PlayerDao
-import com.chalabysolutions.toepenscorebord.data.model.Player
-import com.chalabysolutions.toepenscorebord.data.model.GameRound
+import com.chalabysolutions.toepenscorebord.data.dao.RoundPlayerDao
+import com.chalabysolutions.toepenscorebord.data.dao.SessionPlayerDao
+import com.chalabysolutions.toepenscorebord.data.dao.RoundDao
+import com.chalabysolutions.toepenscorebord.data.entity.Player
+import com.chalabysolutions.toepenscorebord.data.entity.Session
+import com.chalabysolutions.toepenscorebord.data.entity.RoundPlayer
+import com.chalabysolutions.toepenscorebord.data.entity.SessionPlayer
+import com.chalabysolutions.toepenscorebord.data.entity.Round
 
 @Database(
-    entities = [Player::class, GameRound::class],
-    version = 1,
+    entities = [
+        Player::class,
+        Session::class,
+        Round::class,
+        RoundPlayer::class,
+        SessionPlayer::class
+               ],
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun playerDao(): PlayerDao
-    abstract fun gameRoundDao(): GameRoundDao
-
-    companion object {
-        @Volatile private var INSTANCE: AppDatabase? = null
-
-        fun getDatabase(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "toepen_db"
-                ).build().also { INSTANCE = it }
-            }
-        }
-    }
+    abstract fun sessionPlayerDao(): SessionPlayerDao
+    abstract fun sessionDao(): SessionDao
+    abstract fun roundDao(): RoundDao
+    abstract fun roundPlayerDao(): RoundPlayerDao
 }
