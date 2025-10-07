@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.chalabysolutions.toepenscorebord.data.entity.Session
+import com.chalabysolutions.toepenscorebord.data.relation.SessionWithPlayers
 import com.chalabysolutions.toepenscorebord.data.relation.SessionWithRounds
 import kotlinx.coroutines.flow.Flow
 
@@ -15,14 +16,22 @@ interface SessionDao {
 
     @Transaction
     @Query("SELECT * FROM session WHERE id = :sessionId LIMIT 1")
-    fun getSessionWithRoundsFlow(sessionId: Int): Flow<SessionWithRounds>
+    fun getSessionWithRounds(sessionId: Int): Flow<SessionWithRounds>
+
+    @Transaction
+    @Query("SELECT * FROM session")
+    fun getSessionsWithRounds(): Flow<List<SessionWithRounds>>
+
+    @Transaction
+    @Query("SELECT * FROM session")
+    fun getSessionsWithPlayers(): Flow<List<SessionWithPlayers>>
 
     // wat je al had:
     @Query("SELECT * FROM session ORDER BY date DESC")
-    fun getAllSessionsFlow(): Flow<List<Session>>
+    fun getAllSessions(): Flow<List<Session>>
 
     @Query("SELECT * FROM session WHERE active = 1 LIMIT 1")
-    fun getActiveSessionFlow(): Flow<Session?>
+    fun getActiveSession(): Flow<Session?>
 
     @Query("SELECT * FROM session WHERE active = 1 LIMIT 1")
     suspend fun getActiveSessionOnce(): Session?

@@ -5,10 +5,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.chalabysolutions.toepenscorebord.ui.screens.DatabaseOverviewScreen
 import com.chalabysolutions.toepenscorebord.ui.screens.HomeScreen
 import com.chalabysolutions.toepenscorebord.ui.screens.PlayersScreen
 import com.chalabysolutions.toepenscorebord.ui.screens.RoundScreen
 import com.chalabysolutions.toepenscorebord.ui.screens.SessionScreen
+import com.chalabysolutions.toepenscorebord.ui.screens.SettingScreen
 import com.chalabysolutions.toepenscorebord.viewmodel.PlayerViewModel
 import com.chalabysolutions.toepenscorebord.viewmodel.SessionViewModel
 
@@ -17,16 +19,12 @@ sealed class Screen(val route: String) {
     object Session : Screen("session/{sessionId}") {
         fun createRoute(sessionId: Int) = "session/$sessionId"
     }
-//    object Player : Screen("Players/{selectedIds}") {
-//        fun createRoute(selectedIds: List<Int>): String {
-//            val idsArg = selectedIds.joinToString(",") // encode als CSV
-//            return "Players/$idsArg"
-//        }
-//    }
-    object Player : Screen("Players")
+    object Player : Screen("Player")
     object Round : Screen("round/{roundId}") {
         fun createRoute(roundId: Int) = "round/$roundId"
     }
+    object Setting : Screen("Setting")
+    object Overview : Screen("Overview")
 }
 
 @Composable
@@ -62,6 +60,14 @@ fun ToepenNavGraph(navController: NavHostController) {
         composable(Screen.Round.route) { backStackEntry ->
             val roundId = backStackEntry.arguments?.getString("roundId")?.toInt() ?: 0
             RoundScreen(navController, roundId)
+        }
+
+        composable( Screen.Setting.route) {
+            SettingScreen(navController)
+        }
+
+        composable( Screen.Overview.route) {
+            DatabaseOverviewScreen(navController)
         }
     }
 }

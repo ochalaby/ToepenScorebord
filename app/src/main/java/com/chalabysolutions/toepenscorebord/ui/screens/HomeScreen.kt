@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -28,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -54,10 +56,15 @@ fun HomeScreen(
                 navController.navigate(Screen.Session.createRoute(newId))
             }
         },
-        onSessionClick = { session ->
-            navController.navigate(Screen.Session.createRoute(session.id))
+        onSessionClick = { sessionId ->
+            navController.navigate(Screen.Session.createRoute(sessionId))
         },
-        onSettingsClicked = {}
+        onSettingsClicked = {
+            navController.navigate((Screen.Setting.route))
+        },
+        onOverviewClicked = {
+            navController.navigate(Screen.Overview.route)
+        }
     )
 }
 
@@ -66,22 +73,25 @@ fun HomeScreen(
 fun HomeScreenContent(
     uiState: HomeViewModel.UiState,
     onAddSession: () -> Unit = {},
-    onSessionClick: (Session) -> Unit = {},
-    onSettingsClicked: () -> Unit = {}
+    onSessionClick: (Int) -> Unit = {},
+    onSettingsClicked: () -> Unit = {},
+    onOverviewClicked: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
-//            TopAppBar(
-//                title = { Text("Kaartavonden") }
-//            ),
             CenterAlignedTopAppBar(
                 title = { Text("Kaartavonden") },
                 actions = {
+                    IconButton(onClick = onOverviewClicked) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List, // of Storage/TableChart
+                            contentDescription = "Database overzicht"
+                        )
+                    }
                     IconButton(onClick = onSettingsClicked) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "settings",
-//                            tint = gd_default
+                            contentDescription = "settings"
                         )
                     }
                 }
@@ -100,8 +110,9 @@ fun HomeScreenContent(
                 if (uiState.sessions.isEmpty()) {
                     Text(
                         text = "Nog geen sessies gestart.",
-                        modifier = Modifier.align(Alignment.Center),
-                        style = MaterialTheme.typography.bodyLarge
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
                     )
                 } else {
                     LazyColumn {
@@ -109,7 +120,7 @@ fun HomeScreenContent(
                             SessionCard(
                                 session = session,
                                 onClick = {
-                                    onSessionClick(session)
+                                    onSessionClick(session.id)
                                 }
                             )
                         }
@@ -150,6 +161,7 @@ fun HomeScreenPreviewContent(darkTheme: Boolean = false) {
         Session(id = 1, date = System.currentTimeMillis(), active = true),
         Session(id = 2, date = System.currentTimeMillis() - 86400000, active = false)
     )
+
     ToepenScorebordTheme(darkTheme = darkTheme) {
         HomeScreenContent(
             uiState = HomeViewModel.UiState(sessions = fakeSessions, isLoading = false)

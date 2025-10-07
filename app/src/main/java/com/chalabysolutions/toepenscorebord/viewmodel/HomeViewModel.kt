@@ -39,11 +39,7 @@ class HomeViewModel @Inject constructor(
 
     fun addSessionAndNavigate(onCreated: (Int) -> Unit) {
         viewModelScope.launch {
-            val newSession = Session(
-                date = System.currentTimeMillis(),
-                active = true
-            )
-            val newId = repository.insertSession(newSession).toInt()
+            val newId = repository.insertSession()
             onCreated(newId)
         }
     }

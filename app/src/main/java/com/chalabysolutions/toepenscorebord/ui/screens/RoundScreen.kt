@@ -85,7 +85,7 @@ fun RoundScreenContent(
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(
-            title = { Text("Ronde ${roundWithPlayers?.round?.id ?: "-"} (tot ${roundWithPlayers?.round?.maxPoints}) punten") },
+            title = { Text("Ronde ${roundWithPlayers?.round?.roundNumber ?: "-"} (tot ${roundWithPlayers?.round?.maxPoints}) punten") },
             navigationIcon = {
                 IconButton(onClick = {
                     navController.popBackStack()
@@ -260,7 +260,7 @@ fun RoundScreenPreviewContent(darkTheme: Boolean = false, knockCounter: Int = 0)
         )
     )
     val dummyRoundWithPlayers = RoundWithPlayers(
-        round = Round(id = 1, sessionId = 1, active = true),
+        round = Round(id = 1, roundNumber = 3, sessionId = 1, active = true),
         players = dummyPlayers
     )
 

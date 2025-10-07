@@ -79,7 +79,11 @@ fun SessionScreen(
             savedStateHandle?.set("selectedPlayers", ArrayList(uiState.players.map { it.player.id }))
             navController.navigate(Screen.Player.route)
         },
-        onStartRound = { viewModel.startNewRoundAndNavigate(navController) }
+        onStartRound = {
+            viewModel.startNewRoundAndNavigate { newId ->
+                navController.navigate(Screen.Round.createRoute(newId))
+            }
+        }
     )
 }
 
@@ -190,7 +194,7 @@ fun RoundCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Ronde ${round.id}",
+                text = "Ronde ${round.roundNumber}",
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.height(4.dp))
@@ -217,9 +221,9 @@ fun SessionScreenPreviewContent(darkTheme: Boolean = false) {
         SessionViewModel.PlayerSelection(player = Player(id = 3, name = "Anna"), isActive = false)
     )
     val dummyRounds = listOf(
-        Round(id =1, sessionId = 1, active = false),
-        Round(id =2, sessionId = 1, active = false),
-        Round(id =3, sessionId = 1, active = true)
+        Round(id = 10, roundNumber =1, sessionId = 1, active = false),
+        Round(id = 11, roundNumber =2, sessionId = 1, active = false),
+        Round(id = 12, roundNumber =3, sessionId = 1, active = true)
     )
 
     ToepenScorebordTheme(darkTheme = darkTheme) {

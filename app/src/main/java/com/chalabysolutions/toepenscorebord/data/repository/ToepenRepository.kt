@@ -7,11 +7,19 @@ import com.chalabysolutions.toepenscorebord.data.entity.RoundPlayer
 import com.chalabysolutions.toepenscorebord.data.entity.Round
 import com.chalabysolutions.toepenscorebord.data.entity.SessionPlayer
 import com.chalabysolutions.toepenscorebord.data.relation.RoundWithPlayers
+import com.chalabysolutions.toepenscorebord.data.relation.SessionPlayerWithPlayer
+import com.chalabysolutions.toepenscorebord.data.relation.SessionWithPlayers
 import com.chalabysolutions.toepenscorebord.data.relation.SessionWithRounds
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 class ToepenRepository(private val db: AppDatabase) {
+
+    suspend fun clearDatabase() = withContext(Dispatchers.IO) {
+        db.clearAllTables()
+    }
 
     // ============================
     // Players
@@ -48,11 +56,11 @@ class ToepenRepository(private val db: AppDatabase) {
     // ============================
     // SessionPlayers
     // ============================
-    fun getPlayersForSession(sessionId: Int): Flow<List<Player>> =
-        db.sessionPlayerDao().getPlayersForSession(sessionId)
+    fun getPlayersForSession(sessionId: Int): Flow<List<SessionPlayerWithPlayer>> =
+        db.sessionPlayerDao().getSessionPlayers(sessionId)
 
     suspend fun addPlayerToSession(sessionId: Int, playerId: Int) {
-        db.sessionPlayerDao().insert(SessionPlayer(sessionId = sessionId, playerId = playerId))
+        db.sessionPlayerDao().insert(SessionPlayer(sessionId = sessionId, playerId = playerId, active = true))
     }
 
     suspend fun setPlayerActiveInSession(sessionId: Int, playerId: Int, active: Boolean) {
@@ -78,15 +86,18 @@ class ToepenRepository(private val db: AppDatabase) {
     // ============================
     // Sessions
     // ============================
-    val allSessions: Flow<List<Session>> = db.sessionDao().getAllSessionsFlow()
+    val allSessions: Flow<List<Session>> = db.sessionDao().getAllSessions()
 
     fun getSessionWithRounds(sessionId: Int): Flow<SessionWithRounds> =
-        db.sessionDao().getSessionWithRoundsFlow(sessionId)
+        db.sessionDao().getSessionWithRounds(sessionId)
 
-    suspend fun insertSession(session: Session): Long =
-        db.sessionDao().insertSession(session)
+    fun getSessionsWithRounds(): Flow<List<SessionWithRounds>> =
+        db.sessionDao().getSessionsWithRounds()
 
-    suspend fun startNewSession(selectedPlayerIds: List<Int>): Int {
+    fun getSessionsWithPlayers(): Flow<List<SessionWithPlayers>> =
+        db.sessionDao().getSessionsWithPlayers()
+
+    suspend fun insertSession(): Int {
         // ️Sluit eventuele actieve sessie
         db.sessionDao().deactivateAllSessions()
 
@@ -96,13 +107,6 @@ class ToepenRepository(private val db: AppDatabase) {
             active = true
         )
         val sessionId = db.sessionDao().insertSession(newSession).toInt()
-
-        // Voeg geselecteerde spelers toe
-        val sessionPlayers = selectedPlayerIds.map { pid ->
-            SessionPlayer(sessionId = sessionId, playerId = pid)
-        }
-        db.sessionPlayerDao().insertAll(sessionPlayers)
-
         return sessionId
     }
 
@@ -110,8 +114,11 @@ class ToepenRepository(private val db: AppDatabase) {
     // Rounds
     // ============================
     fun getRoundWithPlayers(roundId: Int): Flow<RoundWithPlayers> {
-        return db.roundDao().getRoundWithPlayersFlow(roundId)
+        return db.roundDao().getRoundWithPlayers(roundId)
     }
+
+    fun getRoundsWithPlayers(): Flow<List<RoundWithPlayers>> =
+        db.roundDao().getRoundsWithPlayers()
 
     suspend fun resetPlayerEliminationStatus(roundId: Int) {
         val roundWithPlayers = getRoundWithPlayers(roundId).first() // haal snapshot
@@ -126,14 +133,22 @@ class ToepenRepository(private val db: AppDatabase) {
     suspend fun startNewRound(sessionId: Int, maxPoints: Int = 15): Int {
         // zet alle huidige rondes inactief
         db.roundDao().deactivateAllRoundsInSession(sessionId)
+
+        val currentMax = db.roundDao().getMaxRoundNumber(sessionId) ?: 0
+
         // voeg nieuwe ronde toe
         val roundId = db.roundDao().insertRound(
-            Round(sessionId = sessionId, maxPoints = maxPoints, active = true)
+            Round(
+                sessionId = sessionId,
+                roundNumber = currentMax + 1,
+                maxPoints = maxPoints,
+                active = true
+            )
         ).toInt()
 
-        val activePlayers = db.sessionPlayerDao().getActivePlayers(sessionId).first()
-        val roundPlayers = activePlayers.map { player ->
-            RoundPlayer(roundId = roundId, playerId = player.id)
+        val activePlayers = db.sessionPlayerDao().getActiveSessionPlayers(sessionId).first()
+        val roundPlayers = activePlayers.map { sp ->
+            RoundPlayer(roundId = roundId, playerId = sp.player.id)
         }
         db.roundPlayerDao().insertAll(roundPlayers)
         return roundId

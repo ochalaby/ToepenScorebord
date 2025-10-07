@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class Round(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val sessionId: Int, // FK naar CardSession
+    val roundNumber: Int, // Per sessie een aparte reeks met rounde nummers
     val maxPoints: Int = 15, // kan 10 of 15 zijn
     val active: Boolean = true,
     var winnerId: Int? = null,

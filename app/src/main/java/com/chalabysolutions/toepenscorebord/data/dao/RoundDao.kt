@@ -1,6 +1,5 @@
 package com.chalabysolutions.toepenscorebord.data.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -24,22 +23,16 @@ interface RoundDao {
     @Delete
     suspend fun deleteRound(round: Round)
 
-    @Query("SELECT * FROM round WHERE active = 1 LIMIT 1")
-    fun getActiveRound(): LiveData<Round?>
-
-    @Query("SELECT * FROM round WHERE sessionId = :sessionId ORDER BY id ASC")
-    fun getRoundsForSession(sessionId: Int): LiveData<List<Round>>
-
-    @Query("SELECT * FROM round WHERE id = :roundId")
-    fun getRound(roundId: Int): LiveData<Round>
-
     @Transaction
     @Query("SELECT * FROM round WHERE id = :roundId")
-    fun getRoundWithPlayers(roundId: Int): LiveData<RoundWithPlayers>
+    fun getRoundWithPlayers(roundId: Int): Flow<RoundWithPlayers>
 
     @Transaction
-    @Query("SELECT * FROM round WHERE id = :roundId")
-    fun getRoundWithPlayersFlow(roundId: Int): Flow<RoundWithPlayers>
+    @Query("SELECT * FROM round")
+    fun getRoundsWithPlayers(): Flow<List<RoundWithPlayers>>
+
+    @Query("SELECT MAX(roundNumber) FROM round WHERE sessionId = :sessionId")
+    suspend fun getMaxRoundNumber(sessionId: Int): Int?
 
     @Query("UPDATE round SET active = 0 WHERE sessionId = :sessionId AND active = 1")
     suspend fun deactivateAllRoundsInSession(sessionId: Int)

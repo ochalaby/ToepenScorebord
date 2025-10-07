@@ -9,6 +9,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.chalabysolutions.toepenscorebord.data.entity.Player
 import com.chalabysolutions.toepenscorebord.data.entity.SessionPlayer
+import com.chalabysolutions.toepenscorebord.data.relation.SessionPlayerWithPlayer
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -26,22 +27,13 @@ interface SessionPlayerDao {
     @Query("UPDATE session_player SET active = :active WHERE sessionId = :sessionId AND playerId = :playerId")
     suspend fun updateActiveStatus(sessionId: Int, playerId: Int, active: Boolean)
 
-    // Haal Player-objecten die bij een session horen (gebruik JOIN)
     @Transaction
-    @Query("""
-        SELECT p.* FROM player p
-        INNER JOIN session_player sp ON p.id = sp.playerId
-        WHERE sp.sessionId = :sessionId
-        ORDER BY p.name ASC
-    """)
-    fun getPlayersForSession(sessionId: Int): Flow<List<Player>>
+    @Query("SELECT * FROM session_player WHERE sessionId = :sessionId")
+    fun getSessionPlayers(sessionId: Int): Flow<List<SessionPlayerWithPlayer>>
 
-    @Query("""
-        SELECT p.* FROM player p
-        INNER JOIN session_player sp ON p.id = sp.playerId
-        WHERE sp.sessionId = :sessionId AND sp.active = 1
-    """)
-    fun getActivePlayers(sessionId: Int): Flow<List<Player>>
+    @Transaction
+    @Query("SELECT * FROM session_player WHERE sessionId = :sessionId AND  active = 1")
+    fun getActiveSessionPlayers(sessionId: Int): Flow<List<SessionPlayerWithPlayer>>
 
     @Delete
     suspend fun delete(sessionPlayer: SessionPlayer)

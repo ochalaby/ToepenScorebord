@@ -3,12 +3,11 @@ package com.chalabysolutions.toepenscorebord.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavHostController
 import com.chalabysolutions.toepenscorebord.data.entity.Player
 import com.chalabysolutions.toepenscorebord.data.entity.Round
 import com.chalabysolutions.toepenscorebord.data.entity.Session
+import com.chalabysolutions.toepenscorebord.data.entity.SessionPlayer
 import com.chalabysolutions.toepenscorebord.data.repository.ToepenRepository
-import com.chalabysolutions.toepenscorebord.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.plus
 
 @HiltViewModel
 class SessionViewModel @Inject constructor(
@@ -51,8 +49,8 @@ class SessionViewModel @Inject constructor(
                 UiState(
                     session = sessionWithRounds.session,
                     rounds = sessionWithRounds.rounds,
-                    players = sessionPlayers.map { p ->
-                        PlayerSelection(player = p, isActive = true)
+                    players = sessionPlayers.map { sp ->
+                        PlayerSelection(player = sp.player, isActive = sp.sessionPlayer.active)
                     },
                     isLoading = false
                 )
@@ -76,7 +74,7 @@ class SessionViewModel @Inject constructor(
     }
 
     // Voeg één speler toe aan de sessie en update lokale state
-    fun addPlayerToSession(player: Player) {
+    private fun addPlayerToSession(player: Player) {
         viewModelScope.launch {
             repository.addPlayerToSession(sessionId, player.id)
             val currentPlayers = _uiState.value.players
@@ -98,12 +96,10 @@ class SessionViewModel @Inject constructor(
     }
 
     // Start een nieuwe ronde met alle actieve spelers
-    fun startNewRoundAndNavigate(navController: NavHostController, maxPoints: Int = 15) {
+    fun startNewRoundAndNavigate(onCreated: (Int) -> Unit) {
         viewModelScope.launch {
-            val newRoundId = repository.startNewRound(sessionId, maxPoints)
-            navController.navigate(Screen.Round.createRoute(newRoundId)) {
-                launchSingleTop = true
-            }
+            val newId = repository.startNewRound(sessionId, maxPoints = 15)
+            onCreated(newId)
         }
     }
 }
