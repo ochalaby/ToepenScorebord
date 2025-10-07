@@ -1,6 +1,6 @@
 package com.chalabysolutions.toepenscorebord.viewmodel
 
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chalabysolutions.toepenscorebord.data.entity.Round
@@ -26,7 +26,7 @@ class RoundViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    var knockCounter = mutableStateOf(0)
+    var knockCounter = mutableIntStateOf(0)
         private set
 
     fun loadRound(roundId: Int) {
@@ -37,13 +37,27 @@ class RoundViewModel @Inject constructor(
         }
     }
 
+    fun toggleShortRound() {
+        val currentRound = _uiState.value.roundWithPlayers?.round ?: return
+        val newMaxPoints = if (currentRound.maxPoints == 15) 10 else 15
+        val updatedRound = currentRound.copy(maxPoints = newMaxPoints)
+
+        viewModelScope.launch {
+            repository.updateRound(updatedRound) // schrijf naar DB
+            val current = _uiState.value
+            _uiState.value = current.copy(
+                roundWithPlayers = current.roundWithPlayers?.copy(round = updatedRound)
+            )
+        }
+    }
+
     fun pass(roundId: Int, playerId: Int) {
         viewModelScope.launch {
             repository.updateRoundPlayer(
                 roundId = roundId,
                 playerId = playerId,
                 update = { current ->
-                    val extraPoints = if (knockCounter.value == 0) 1 else knockCounter.value
+                    val extraPoints = if (knockCounter.intValue == 0) 1 else knockCounter.intValue
                     current.copy(
                         points = current.points + extraPoints,
                         eliminated = true
@@ -55,35 +69,80 @@ class RoundViewModel @Inject constructor(
 
     fun knock() {
         viewModelScope.launch {
-            knockCounter.value += 1
+            knockCounter.intValue += 1
+        }
+    }
+
+    fun knockDown() {
+        viewModelScope.launch {
+            if (knockCounter.intValue > 0) knockCounter.intValue -= 1
         }
     }
 
     fun win(roundId: Int, winnerPlayerId: Int) {
         viewModelScope.launch {
-            val extraPoints = 1 + knockCounter.value
-            val roundWithPlayers = repository.getRoundWithPlayers(roundId).first() // <---
+            val roundWithPlayers = repository.getRoundWithPlayers(roundId).first()
+            val round = roundWithPlayers.round
+            val isArmoede = roundWithPlayers.players.any { playerWithRound ->
+                playerWithRound.roundPlayer.points == round.maxPoints - 1
+            }
+
+            // Geef de verliezers punten
             roundWithPlayers.players.forEach { pr ->
-                if (pr.player.id != winnerPlayerId && !pr.roundPlayer.eliminated) {
-                    repository.updateRoundPlayer(roundId, pr.player.id) { current ->
-                        current.copy(
-                            points = current.points + extraPoints,
-                            eliminated = true
-                        )
-                    }
-                } else if (pr.player.id == winnerPlayerId) {
-                    repository.updateRoundPlayer(roundId, pr.player.id) { current ->
-                        current.copy(eliminated = true) // winnaar ook uitschakelen
-                    }
+                val current = pr.roundPlayer
+                var newPoints = current.points
+
+                if (current.playerId != winnerPlayerId && !current.eliminated && current.points < round.maxPoints) {
+                    // verliezers
+                    val basePoints = 1 + knockCounter.intValue
+                    val extraForArmoede = if (isArmoede) 1 else 0
+                    newPoints = (current.points + basePoints + extraForArmoede)
+                        .coerceAtMost(round.maxPoints)
+                }
+                repository.updateRoundPlayer(roundId, pr.player.id) {
+                    it.copy(points = newPoints, eliminated = true)
                 }
             }
+
+            // Bepaal of er nu een winnaar is (enige speler < maxPoints)
+            val updatedRoundWithPlayers  = repository.getRoundWithPlayers(roundId).first()
+            val survivors = updatedRoundWithPlayers .players.filter { it.roundPlayer.points < updatedRoundWithPlayers .round.maxPoints }
+
+            if (survivors.size == 1) {
+                val winner = survivors.first()
+                // Update round: winnaar + inactive
+                repository.updateRound(updatedRoundWithPlayers .round.copy(
+                    winnerId = winner.player.id,
+                    active = false
+                ))
+                // Alle spelers inactief maken (al gebeurd via eliminated = true, maar voor zekerheid)
+                updatedRoundWithPlayers.players.forEach { pr ->
+                    repository.updateRoundPlayer(roundId, pr.player.id) {
+                        it.copy(eliminated = true)
+                    }
+                }
+            } else {
+                // Geen winner, ronde nog actief?
+                repository.updateRound(updatedRoundWithPlayers.round.copy(
+                    active = false
+                ))
+            }
+
+            // Reset klop-counter
+            knockCounter.intValue = 0
         }
     }
 
-    fun endCurrentGame(round: Round) {
+    fun startNewGame(round: Round) {
         viewModelScope.launch {
+            // Ronde tijdelijk inactief maken, tot er weer een nieuwe game gestart wordt
+            val updated = repository.getRoundWithPlayers(round.id).first()
+            repository.updateRound(updated.round.copy(
+                active = true
+            ))
+
             repository.resetPlayerEliminationStatus(round.id)
-            knockCounter.value = 0
+            knockCounter.intValue = 0
         }
     }
 }

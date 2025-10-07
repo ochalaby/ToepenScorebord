@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SessionDao {
 
+    @Query("DELETE FROM session")
+    suspend fun deleteAllSessions()
+
     @Transaction
     @Query("SELECT * FROM session WHERE id = :sessionId LIMIT 1")
     fun getSessionWithRounds(sessionId: Int): Flow<SessionWithRounds>

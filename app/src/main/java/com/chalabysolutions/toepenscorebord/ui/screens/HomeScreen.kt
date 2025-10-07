@@ -142,8 +142,10 @@ fun SessionCard(session: Session, onClick: () -> Unit) {
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            val name = DateTimeUtils.formatDateToDayMonth(session.date)
+            val status = if (session.active) "Actief" else "Afgerond"
             Text(
-                text = DateTimeUtils.formatDateToDayMonth(session.date),
+                text = "$name (${status})",
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.height(4.dp))

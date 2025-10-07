@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
@@ -18,7 +19,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,21 +52,26 @@ import kotlin.Int
 @Composable
 fun PlayersScreen(
     navController: NavController,
-    viewModel: PlayerViewModel,
-    selectedPlayers: List<Int>
+    viewModel: PlayerViewModel
 ) {
     var newPlayerName by remember { mutableStateOf("") }
     val showInactive by viewModel.showInactive.collectAsState()
     val players by viewModel.allPlayers.collectAsState()
     val canDeleteMap by viewModel.canDeleteMap.collectAsState()
 
+    // --- Read selectedPlayers from the previous backStackEntry.savedStateHandle ---
+    val prevSavedStateHandle = navController.previousBackStackEntry?.savedStateHandle
+    val selectedPlayersFromNav by remember(prevSavedStateHandle) {
+        prevSavedStateHandle?.getStateFlow("selectedPlayers", emptyList<Int>())
+    }?.collectAsState(initial = emptyList()) ?: remember { mutableStateOf(emptyList<Int>()) }
+
     // Lokale UI-state als mutableStateListOf
     val selectedPlayerIds = remember { mutableStateListOf<Int>() }
 
     // Init met geselecteerde spelers vanuit SavedStateHandle
-    LaunchedEffect(selectedPlayers) {
+    LaunchedEffect(selectedPlayersFromNav) {
         selectedPlayerIds.clear()
-        selectedPlayerIds.addAll(selectedPlayers)
+        selectedPlayerIds.addAll(selectedPlayersFromNav)
     }
 
     PlayersScreenContent(
@@ -94,9 +102,7 @@ fun PlayersScreen(
             navController.popBackStack()
         },
         onTogglePlayerActive = { playerId -> viewModel.togglePlayerActive(playerId) },
-        onDeletePlayer = { player ->
-            viewModel.deletePlayerIfUnused(player.id)
-        },
+        onDeletePlayer = { player -> viewModel.deletePlayerIfUnused(player.id) },
         canDelete = {player -> canDeleteMap[player.id] == true}
     )
 }
@@ -132,7 +138,9 @@ fun PlayersScreenContent(
     ) { innerPadding ->
         Column(modifier = Modifier
             .padding(innerPadding)
-            .fillMaxSize()) {
+            .fillMaxSize()
+            .imePadding()
+        ) {
             // Nieuw speler toevoegen
             Row(
                 modifier = Modifier.padding(8.dp),
@@ -161,19 +169,38 @@ fun PlayersScreenContent(
             }
 
             // Toggle actieve/inactieve spelers
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .clickable { onToggleShowInactive() }
+//                    .padding(8.dp),
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                Checkbox(
+//                    checked = showInactive,
+//                    onCheckedChange = { onToggleShowInactive() }
+//                )
+//                Text("Toon ook inactieve spelers")
+//            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onToggleShowInactive() }
-                    .padding(8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Checkbox(
+                Text(
+                    text = "Toon ook inactieve spelers",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
                     checked = showInactive,
                     onCheckedChange = { onToggleShowInactive() }
                 )
-                Text("Toon ook inactieve spelers")
             }
+
+            HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
             LazyColumn {
                 items(players) { player ->

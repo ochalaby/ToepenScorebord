@@ -26,6 +26,5 @@ data class RoundPlayer(
     val roundId: Int, // FK naar Round
     val playerId: Int, // FK naar Player
     var points: Int = 0,
-    var eliminated: Boolean = false,
-    var active: Boolean = true // kan tijdelijk niet meedoen (roken etc.)
+    var eliminated: Boolean = false
 )

@@ -21,7 +21,7 @@ import com.chalabysolutions.toepenscorebord.data.entity.Round
         RoundPlayer::class,
         SessionPlayer::class
                ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

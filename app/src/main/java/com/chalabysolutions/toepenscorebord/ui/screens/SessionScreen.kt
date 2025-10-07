@@ -119,10 +119,21 @@ fun SessionScreenContent(
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-//            Column (modifier = Modifier.fillMaxSize().padding(innerPadding))
             Column{
                 // spelers
-                Text("Spelers", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Spelers", style = MaterialTheme.typography.titleMedium)
+                    Button(onClick = onAddPlayer) {
+                        Text("Spelers toevoegen")
+                    }
+                }
+
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     verticalArrangement = Arrangement.Top
@@ -142,18 +153,6 @@ fun SessionScreenContent(
                             Text(playerSel.player.name, modifier = Modifier.weight(1f))
                         }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Knop om spelers toe te voegen
-                Button(
-                    onClick = onAddPlayer,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                ) {
-                    Text("Spelers toevoegen")
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -199,7 +198,7 @@ fun RoundCard(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = if (round.active) "Actief" else "Gesloten",
+                text = if (round.winnerId == null) "Actief" else "Afgerond",
                 style = MaterialTheme.typography.bodySmall
             )
             Spacer(Modifier.height(2.dp))
@@ -221,9 +220,9 @@ fun SessionScreenPreviewContent(darkTheme: Boolean = false) {
         SessionViewModel.PlayerSelection(player = Player(id = 3, name = "Anna"), isActive = false)
     )
     val dummyRounds = listOf(
-        Round(id = 10, roundNumber =1, sessionId = 1, active = false),
-        Round(id = 11, roundNumber =2, sessionId = 1, active = false),
-        Round(id = 12, roundNumber =3, sessionId = 1, active = true)
+        Round(id = 10, roundNumber =1, sessionId = 1, active = false, winnerId = 1),
+        Round(id = 11, roundNumber =2, sessionId = 1, active = false, winnerId = 1),
+        Round(id = 12, roundNumber =3, sessionId = 1, active = false, winnerId = null)
     )
 
     ToepenScorebordTheme(darkTheme = darkTheme) {

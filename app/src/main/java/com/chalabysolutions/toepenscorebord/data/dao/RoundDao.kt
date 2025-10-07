@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RoundDao {
 
+    @Query("DELETE FROM round")
+    suspend fun deleteAllRounds()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRound(round: Round): Long
 

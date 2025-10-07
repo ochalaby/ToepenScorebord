@@ -21,6 +21,13 @@ class ToepenRepository(private val db: AppDatabase) {
         db.clearAllTables()
     }
 
+    suspend fun clearDatabaseExceptPlayers() {
+        db.roundPlayerDao().deleteAllRoundPlayers()
+        db.sessionPlayerDao().deleteAllSessionPlayers()
+        db.roundDao().deleteAllRounds()
+        db.sessionDao().deleteAllSessions()
+    }
+
     // ============================
     // Players
     // ============================
@@ -120,10 +127,14 @@ class ToepenRepository(private val db: AppDatabase) {
     fun getRoundsWithPlayers(): Flow<List<RoundWithPlayers>> =
         db.roundDao().getRoundsWithPlayers()
 
+    suspend fun updateRound(round: Round) {
+        db.roundDao().updateRound(round)
+    }
+
     suspend fun resetPlayerEliminationStatus(roundId: Int) {
         val roundWithPlayers = getRoundWithPlayers(roundId).first() // haal snapshot
         roundWithPlayers.players.forEach { pr ->
-            val resetEliminated = pr.roundPlayer.points >= 15 // wie 15+ punten heeft blijft eliminated
+            val resetEliminated = pr.roundPlayer.points >= roundWithPlayers.round.maxPoints // wie meer punten heeft blijft eliminated
             updateRoundPlayer(roundId, pr.player.id) { current ->
                 current.copy(eliminated = resetEliminated)
             }

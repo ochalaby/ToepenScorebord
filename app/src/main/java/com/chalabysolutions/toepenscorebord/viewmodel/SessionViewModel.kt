@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.chalabysolutions.toepenscorebord.data.entity.Player
 import com.chalabysolutions.toepenscorebord.data.entity.Round
 import com.chalabysolutions.toepenscorebord.data.entity.Session
-import com.chalabysolutions.toepenscorebord.data.entity.SessionPlayer
 import com.chalabysolutions.toepenscorebord.data.repository.ToepenRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

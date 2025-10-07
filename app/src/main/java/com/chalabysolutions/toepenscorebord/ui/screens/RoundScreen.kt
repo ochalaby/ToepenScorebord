@@ -1,6 +1,7 @@
 package com.chalabysolutions.toepenscorebord.ui.screens
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,13 +11,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -61,11 +67,13 @@ fun RoundScreen (
     RoundScreenContent(
         navController = navController,
         uiState = uiState,
+        onToggleShortRound = { viewModel.toggleShortRound() },
         onPass = { playerId -> viewModel.pass(roundId, playerId) },
         onKnock = { viewModel.knock() },
+        onKnockDown = { viewModel.knockDown() },
         onWin = { playerId -> viewModel.win(roundId, playerId) },
         knockCounter = knockCounter,
-        onEndGame = { uiState.roundWithPlayers?.round?.let { viewModel.endCurrentGame(it) } }
+        onNewGame = { uiState.roundWithPlayers?.round?.let { viewModel.startNewGame(it) } }
     )
 }
 
@@ -74,24 +82,37 @@ fun RoundScreen (
 fun RoundScreenContent(
     navController: NavController,
     uiState: RoundViewModel.UiState,
+    onToggleShortRound: () -> Unit = {},
     onPass: (Int) -> Unit = {},
     onKnock: () -> Unit = {},
+    onKnockDown: () -> Unit = {},
     onWin: (Int) -> Unit = {},
     knockCounter: Int,
-    onEndGame: () -> Unit = {}
+    onNewGame: () -> Unit = {}
 ) {
     val roundWithPlayers = uiState.roundWithPlayers
-    uiState.roundWithPlayers?.round?.sessionId
+
+    val isShortRound = (roundWithPlayers?.round?.maxPoints ?: 15) < 15
+    val canEnableShortRound = roundWithPlayers?.players
+        ?.none { it.roundPlayer.points >= 9 }?: false
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(
-            title = { Text("Ronde ${roundWithPlayers?.round?.roundNumber ?: "-"} (tot ${roundWithPlayers?.round?.maxPoints}) punten") },
             navigationIcon = {
                 IconButton(onClick = {
                     navController.popBackStack()
                 }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Terug naar Session")
                 }
+            },
+            title = { Text("Ronde ${roundWithPlayers?.round?.roundNumber ?: "-"} (tot ${roundWithPlayers?.round?.maxPoints})") },
+            actions = {
+                Text ("kort")
+                Checkbox(
+                    checked = isShortRound,
+                    onCheckedChange = { onToggleShortRound() },
+                    enabled = canEnableShortRound
+                )
             }
         ) }
     ) { innerPadding ->
@@ -99,12 +120,14 @@ fun RoundScreenContent(
             Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
                 roundWithPlayers?.let {
                     ActiveGameComposable(
+                        round = it.round,
                         players = it.players,
                         onPass = onPass,
                         onKnock = onKnock,
+                        onKnockDown = onKnockDown,
                         onWin = onWin,
                         knockCounter = knockCounter,
-                        onEndGame = onEndGame
+                        onNewGame = onNewGame
                     )
                 } ?: Text("Bezig met laden...")
             }
@@ -114,22 +137,30 @@ fun RoundScreenContent(
 
 @Composable
 fun ActiveGameComposable(
+    round: Round,
     players: List<RoundPlayerWithPlayer>,
     onPass: (Int) -> Unit,
     onKnock: () -> Unit,
+    onKnockDown: () -> Unit,
     onWin: (Int) -> Unit,
     knockCounter: Int,
-    onEndGame: () -> Unit
+    onNewGame: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         players.forEach { roundPlayerWithPlayer ->
             val player = roundPlayerWithPlayer.player
             val roundPlayer = roundPlayerWithPlayer.roundPlayer
+            val isArmoede = roundPlayer.points == round.maxPoints - 1
+            val isWinner = roundPlayer.playerId == round.winnerId
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = playerCardBackground(roundPlayer, round.maxPoints)
+                )
             ) {
                 Column(Modifier.padding(8.dp)) {
                     // Eerste rij: naam links + ScoreMarks ernaast
@@ -144,6 +175,16 @@ fun ActiveGameComposable(
                         Spacer(modifier = Modifier.width(8.dp))
                         ScoreMarks(score = roundPlayer.points)
                         Spacer(modifier = Modifier.weight(1f)) // duwt alles links
+
+                        if (isWinner) {
+                            StatusBadge(
+                                text = "Winnaar",
+                                color = Color(0xFF388E3C),
+                                textColor = Color.White
+                            )
+                        } else if (isArmoede) {
+                            StatusBadge("Armoede")
+                        }
                     }
 
                     Spacer(Modifier.height(8.dp))
@@ -153,11 +194,17 @@ fun ActiveGameComposable(
                         horizontalArrangement = Arrangement.End,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Button(onClick = { onPass(roundPlayer.playerId) }, enabled = !roundPlayer.eliminated) {
+                        Button(
+                            onClick = { onPass(roundPlayer.playerId) },
+                            enabled = !roundPlayer.eliminated
+                        ) {
                             Text("Pas")
                         }
                         Spacer(Modifier.width(8.dp))
-                        Button(onClick = { onWin(roundPlayer.playerId) }, enabled = !roundPlayer.eliminated) {
+                        Button(
+                            onClick = { onWin(roundPlayer.playerId) },
+                            enabled = !roundPlayer.eliminated
+                        ) {
                             Text("Win")
                         }
                     }
@@ -165,22 +212,71 @@ fun ActiveGameComposable(
             }
         }
 
-
         // Klop-counter
-        Spacer(Modifier.height(42.dp))
-        Text(
-            text = "Aantal kloppen: $knockCounter",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        Spacer(Modifier.height(22.dp))
 
-        Spacer(Modifier.height(4.dp))
-        Button(onClick = { onKnock() }) {
-            Text("Klop")
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            Text(
+                text = "Aantal kloppen: $knockCounter",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Button(
+                onClick = { onKnock() },
+                enabled = round.active) {
+                Text("Klop")
+            }
+
+            IconButton(
+                onClick = { if (knockCounter > 0) onKnockDown() },
+                enabled = knockCounter > 0,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Verlaag kloppen",
+                    modifier = Modifier.size(48.dp)
+                )
+            }
         }
 
-        Spacer(Modifier.height(42.dp))
-        Button(onClick = onEndGame) { Text("Nieuwe Game") }
+        Button(
+            onClick = onNewGame,
+            enabled = !round.active && round.winnerId == null
+        ) { Text("Nieuwe Game") }
+    }
+}
+
+@Composable
+fun playerCardBackground(roundPlayer: RoundPlayer, maxPoints: Int): Color {
+    return when {
+        roundPlayer.points >= maxPoints -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f) // afgevallen
+//        roundPlayer.eliminated -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)       // tijdelijk gepast
+        else -> MaterialTheme.colorScheme.surfaceVariant                                                                              // actief
+    }
+}
+
+@Composable
+fun StatusBadge(
+    text: String,
+    color: Color = MaterialTheme.colorScheme.error,
+    textColor: Color = MaterialTheme.colorScheme.onError
+) {
+    Box(
+        modifier = Modifier
+            .background(color = color, shape = RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = textColor
+        )
     }
 }
 
@@ -247,11 +343,11 @@ fun RoundScreenPreviewContent(darkTheme: Boolean = false, knockCounter: Int = 0)
     val navController = rememberNavController()
     val dummyPlayers = listOf(
         RoundPlayerWithPlayer(
-            roundPlayer = RoundPlayer(roundId = 1, playerId = 1, points = 4, eliminated = true),
+            roundPlayer = RoundPlayer(roundId = 1, playerId = 1, points = 10, eliminated = true),
             player = Player(id = 1, name = "Jan")
         ),
         RoundPlayerWithPlayer(
-            roundPlayer = RoundPlayer(roundId = 1, playerId = 2, points = 13),
+            roundPlayer = RoundPlayer(roundId = 1, playerId = 2, points = 9),
             player = Player(id = 2, name = "Piet")
         ),
         RoundPlayerWithPlayer(
@@ -260,7 +356,13 @@ fun RoundScreenPreviewContent(darkTheme: Boolean = false, knockCounter: Int = 0)
         )
     )
     val dummyRoundWithPlayers = RoundWithPlayers(
-        round = Round(id = 1, roundNumber = 3, sessionId = 1, active = true),
+        round = Round(
+            id = 1,
+            sessionId = 1,
+            maxPoints = 10,
+            roundNumber = 3,
+            winnerId = 3,
+            active = true),
         players = dummyPlayers
     )
 

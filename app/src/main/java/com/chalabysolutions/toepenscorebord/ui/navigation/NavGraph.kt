@@ -47,13 +47,10 @@ fun ToepenNavGraph(navController: NavHostController) {
 
         composable(Screen.Player.route) { backStackEntry ->
             val viewModel: PlayerViewModel = hiltViewModel()
-            val selectedPlayers = backStackEntry.savedStateHandle
-                .get<List<Int>>("selectedPlayers")?.toList() ?: emptyList()
 
             PlayersScreen(
                 navController = navController,
-                viewModel = viewModel,
-                selectedPlayers = selectedPlayers
+                viewModel = viewModel
             )
         }
 

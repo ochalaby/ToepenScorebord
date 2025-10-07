@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chalabysolutions.toepenscorebord.data.entity.Session
 import com.chalabysolutions.toepenscorebord.data.repository.ToepenRepository
-import com.chalabysolutions.toepenscorebord.viewmodel.HomeViewModel.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +40,7 @@ class SettingViewModel @Inject constructor(
     fun resetDatabase() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            repository.clearDatabase()
+            repository.clearDatabaseExceptPlayers()
             loadSessions()
         }
     }

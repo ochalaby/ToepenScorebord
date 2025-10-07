@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SessionPlayerDao {
 
+    @Query("DELETE FROM session_player")
+    suspend fun deleteAllSessionPlayers()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(sessionPlayer: SessionPlayer): Long
 

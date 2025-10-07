@@ -11,6 +11,9 @@ import com.chalabysolutions.toepenscorebord.data.entity.RoundPlayer
 @Dao
 interface RoundPlayerDao {
 
+    @Query("DELETE FROM round_player")
+    suspend fun deleteAllRoundPlayers()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(roundPlayer: RoundPlayer): Long
 

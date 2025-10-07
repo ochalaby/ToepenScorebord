@@ -88,7 +88,7 @@ fun SettingScreenContent(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(onClick = onResetDatabase) {
-                        Text("Reset database")
+                        Text("Delete all sessions")
                     }
                 }
             }
