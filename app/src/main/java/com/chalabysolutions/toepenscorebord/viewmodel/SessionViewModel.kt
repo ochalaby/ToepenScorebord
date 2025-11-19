@@ -101,4 +101,10 @@ class SessionViewModel @Inject constructor(
             onCreated(newId)
         }
     }
+
+    fun deleteRound(round: Round) {
+        viewModelScope.launch {
+            repository.deleteRound(round)
+        }
+    }
 }

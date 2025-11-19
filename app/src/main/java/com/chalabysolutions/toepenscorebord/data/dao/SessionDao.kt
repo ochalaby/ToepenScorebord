@@ -1,6 +1,7 @@
 package com.chalabysolutions.toepenscorebord.data.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -16,6 +17,9 @@ interface SessionDao {
 
     @Query("DELETE FROM session")
     suspend fun deleteAllSessions()
+
+    @Delete
+    suspend fun deleteSession(session: Session)
 
     @Transaction
     @Query("SELECT * FROM session WHERE id = :sessionId LIMIT 1")

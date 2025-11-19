@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -69,6 +71,8 @@ fun RoundScreen (
         uiState = uiState,
         onToggleShortRound = { viewModel.toggleShortRound() },
         onPass = { playerId -> viewModel.pass(roundId, playerId) },
+        onAddPoint = { playerId -> viewModel.addPoint(roundId, playerId) },
+        onRemovePoint = { playerId -> viewModel.removePoint(roundId, playerId) },
         onKnock = { viewModel.knock() },
         onKnockDown = { viewModel.knockDown() },
         onWin = { playerId -> viewModel.win(roundId, playerId) },
@@ -84,6 +88,8 @@ fun RoundScreenContent(
     uiState: RoundViewModel.UiState,
     onToggleShortRound: () -> Unit = {},
     onPass: (Int) -> Unit = {},
+    onAddPoint: (Int) -> Unit = {},
+    onRemovePoint: (Int) -> Unit = {},
     onKnock: () -> Unit = {},
     onKnockDown: () -> Unit = {},
     onWin: (Int) -> Unit = {},
@@ -126,6 +132,8 @@ fun RoundScreenContent(
                         onKnock = onKnock,
                         onKnockDown = onKnockDown,
                         onWin = onWin,
+                        onAddPoint = onAddPoint,
+                        onRemovePoint = onRemovePoint,
                         knockCounter = knockCounter,
                         onNewGame = onNewGame
                     )
@@ -143,6 +151,8 @@ fun ActiveGameComposable(
     onKnock: () -> Unit,
     onKnockDown: () -> Unit,
     onWin: (Int) -> Unit,
+    onAddPoint: (Int) -> Unit,
+    onRemovePoint: (Int) -> Unit,
     knockCounter: Int,
     onNewGame: () -> Unit
 ) {
@@ -189,23 +199,43 @@ fun ActiveGameComposable(
 
                     Spacer(Modifier.height(8.dp))
 
-                    // Tweede rij: knoppen rechts uitgelijnd
+                    // Tweede rij: +/- acties links uitgelijnd en knoppen rechts uitgelijnd
                     Row(
-                        horizontalArrangement = Arrangement.End,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Button(
-                            onClick = { onPass(roundPlayer.playerId) },
-                            enabled = !roundPlayer.eliminated
-                        ) {
-                            Text("Pas")
+                        Row {
+                            IconButton(
+                                onClick = { onRemovePoint(roundPlayer.playerId) },
+                                enabled = roundPlayer.points > 0,
+                                modifier = Modifier.padding(horizontal = 0.dp)
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = null)
+                            }
+                            IconButton(
+                                onClick = { onAddPoint(roundPlayer.playerId) },
+                                enabled = roundPlayer.points < round.maxPoints,
+                                modifier = Modifier.padding(horizontal = 0.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                            }
                         }
-                        Spacer(Modifier.width(8.dp))
-                        Button(
-                            onClick = { onWin(roundPlayer.playerId) },
-                            enabled = !roundPlayer.eliminated
-                        ) {
-                            Text("Win")
+
+                        Row {
+                            Button(
+                                onClick = { onPass(roundPlayer.playerId) },
+                                enabled = !roundPlayer.eliminated
+                            ) {
+                                Text("Pas")
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Button(
+                                onClick = { onWin(roundPlayer.playerId) },
+                                enabled = !roundPlayer.eliminated
+                            ) {
+                                Text("Win")
+                            }
                         }
                     }
                 }

@@ -14,6 +14,12 @@ interface RoundPlayerDao {
     @Query("DELETE FROM round_player")
     suspend fun deleteAllRoundPlayers()
 
+    @Query("DELETE FROM round_player WHERE roundId  = :roundId")
+    suspend fun deleteByRoundId(roundId: Int)
+
+    @Query("DELETE FROM round_player WHERE roundId IN (SELECT id FROM round WHERE sessionId = :sessionId)")
+    suspend fun deleteBySessionId(sessionId: Int)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(roundPlayer: RoundPlayer): Long
 

@@ -43,4 +43,10 @@ class HomeViewModel @Inject constructor(
             onCreated(newId)
         }
     }
+
+    fun deleteSession(session: Session) {
+        viewModelScope.launch {
+            repository.deleteSession(session)
+        }
+    }
 }

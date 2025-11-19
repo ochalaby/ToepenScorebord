@@ -17,6 +17,10 @@ interface RoundDao {
     @Query("DELETE FROM round")
     suspend fun deleteAllRounds()
 
+    @Query("DELETE FROM round WHERE sessionId = :sessionId")
+    suspend fun deleteRoundsBySessionId(sessionId: Int)
+
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRound(round: Round): Long
 

@@ -117,6 +117,16 @@ class ToepenRepository(private val db: AppDatabase) {
         return sessionId
     }
 
+    suspend fun deleteSession(session: Session) = withContext(Dispatchers.IO) {
+        // Optioneel: eerst gerelateerde SessionPlayers en Rounds verwijderen
+        db.roundPlayerDao().deleteBySessionId(session.id)
+        db.roundDao().deleteRoundsBySessionId(session.id)
+        db.sessionPlayerDao().deletePlayersForSession(session.id)
+
+        // Verwijder de sessie zelf
+        db.sessionDao().deleteSession(session)
+    }
+
     // ============================
     // Rounds
     // ============================
@@ -163,5 +173,13 @@ class ToepenRepository(private val db: AppDatabase) {
         }
         db.roundPlayerDao().insertAll(roundPlayers)
         return roundId
+    }
+
+    suspend fun deleteRound(round: Round) = withContext(Dispatchers.IO) {
+        // Optioneel: eerst gerelateerde RoundPlayers verwijderen
+        db.roundPlayerDao().deleteByRoundId(round.id)
+
+        // Verwijder de sessie zelf
+        db.roundDao().deleteRound(round)
     }
 }

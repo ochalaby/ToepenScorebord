@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.0"
+agp = "8.13.1"
 kotlin = "2.0.21"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -7,7 +7,7 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.11.0"
-composeBom = "2024.09.00"
+composeBom = "2025.11.00"
 room = "2.8.0"
 ksp = "2.0.21-1.0.25"
 lifecycleLivedataKtx = "2.9.4"
@@ -16,7 +16,6 @@ navigationCompose = "2.9.4"
 runtimeLivedata = "1.9.1"
 hilt = "2.52"
 hiltNavigationCompose = "1.2.0"
-material3 = "1.3.2"
 
 [libraries]
 # AndroidX basics
@@ -31,6 +30,8 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
+androidx-compose-icons-extended = { group = "androidx.compose.material", name ="material-icons-extended" }
 
 # Room
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
@@ -53,7 +54,6 @@ androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecy
 androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
-androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

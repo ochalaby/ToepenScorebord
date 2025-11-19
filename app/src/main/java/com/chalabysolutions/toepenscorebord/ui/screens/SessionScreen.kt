@@ -16,6 +16,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,6 +49,7 @@ import com.chalabysolutions.toepenscorebord.data.entity.Round
 import com.chalabysolutions.toepenscorebord.data.entity.Session
 import com.chalabysolutions.toepenscorebord.ui.navigation.Screen
 import com.chalabysolutions.toepenscorebord.ui.theme.ToepenScorebordTheme
+import com.chalabysolutions.toepenscorebord.util.DateTimeUtils
 import com.chalabysolutions.toepenscorebord.viewmodel.SessionViewModel
 
 @Composable
@@ -73,6 +77,9 @@ fun SessionScreen(
     SessionScreenContent(
         navController = navController,
         uiState = uiState,
+        onRoundDeleteClick = { round ->
+            viewModel.deleteRound(round)
+        },
         onTogglePlayer = { playerId -> viewModel.togglePlayerActiveInSession(playerId) },
         onAddPlayer = {
             // Opslaan in SavedStateHandle als gewone ArrayList
@@ -92,6 +99,7 @@ fun SessionScreen(
 fun SessionScreenContent(
     navController: NavHostController,
     uiState: SessionViewModel.UiState,
+    onRoundDeleteClick: (Round) -> Unit = {},
     onTogglePlayer: (Int) -> Unit,
     onAddPlayer: () -> Unit = {},
     onStartRound: () -> Unit = {}
@@ -169,6 +177,9 @@ fun SessionScreenContent(
                             round = round,
                             onClick = {
                                  navController.navigate(Screen.Round.createRoute(round.id))
+                            },
+                            onDeleteClick = {
+                                onRoundDeleteClick(round)
                             }
                         )
                     }
@@ -181,33 +192,78 @@ fun SessionScreenContent(
 @Composable
 fun RoundCard(
     round: Round,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
+
+    val showDeleteDialog = remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .padding(8.dp)
-            .fillMaxWidth()
-            .clickable { onClick() },
+            .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Ronde ${round.roundNumber}",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = if (round.winnerId == null) "Actief" else "Afgerond",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = "Max punten: ${round.maxPoints}",
-                style = MaterialTheme.typography.bodySmall
-            )
+        Row(
+            modifier = Modifier
+                .padding(4.dp)
+                .clickable { onClick() },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Ronde ${round.roundNumber}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = if (round.winnerId == null) "Actief" else "Afgerond",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "Max punten: ${round.maxPoints}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            IconButton(onClick = {
+                showDeleteDialog.value = true
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Verwijder sessie"
+                )
+            }
         }
     }
+
+    // Bevestigingsdialoog
+    if (showDeleteDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog.value = false },
+            title = { Text("Verwijderen?") },
+            text = { Text("Weet je zeker dat je deze ronde wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteClick()      // Pas de delete toe
+                        showDeleteDialog.value = false
+                    }
+                ) {
+                    Text("Ja, verwijderen", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog.value = false }) {
+                    Text("Annuleren")
+                }
+            }
+        )
+    }
+
+
 }
 
 @Composable

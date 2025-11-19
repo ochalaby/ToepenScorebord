@@ -51,34 +51,6 @@ class RoundViewModel @Inject constructor(
         }
     }
 
-    fun pass(roundId: Int, playerId: Int) {
-        viewModelScope.launch {
-            repository.updateRoundPlayer(
-                roundId = roundId,
-                playerId = playerId,
-                update = { current ->
-                    val extraPoints = if (knockCounter.intValue == 0) 1 else knockCounter.intValue
-                    current.copy(
-                        points = current.points + extraPoints,
-                        eliminated = true
-                    )
-                }
-            )
-        }
-    }
-
-    fun knock() {
-        viewModelScope.launch {
-            knockCounter.intValue += 1
-        }
-    }
-
-    fun knockDown() {
-        viewModelScope.launch {
-            if (knockCounter.intValue > 0) knockCounter.intValue -= 1
-        }
-    }
-
     fun win(roundId: Int, winnerPlayerId: Int) {
         viewModelScope.launch {
             val roundWithPlayers = repository.getRoundWithPlayers(roundId).first()
@@ -133,6 +105,45 @@ class RoundViewModel @Inject constructor(
         }
     }
 
+    fun pass(roundId: Int, playerId: Int) {
+        val extraPoints = if (knockCounter.intValue == 0) 1 else knockCounter.intValue
+        addPoints(roundId, playerId, extraPoints)
+    }
+
+    fun addPoint(roundId: Int, playerId: Int) {
+        addPoints(roundId, playerId, 1)
+    }
+
+    fun removePoint(roundId: Int, playerId: Int) {
+        addPoints(roundId, playerId, -1)
+    }
+
+    private fun addPoints(roundId: Int, playerId: Int, points: Int) {
+        viewModelScope.launch {
+            repository.updateRoundPlayer(
+                roundId = roundId,
+                playerId = playerId,
+                update = { current ->
+                    current.copy(
+                        points = current.points + points
+                    )
+                }
+            )
+        }
+    }
+
+    fun knock() {
+        viewModelScope.launch {
+            knockCounter.intValue += 1
+        }
+    }
+
+    fun knockDown() {
+        viewModelScope.launch {
+            if (knockCounter.intValue > 0) knockCounter.intValue -= 1
+        }
+    }
+
     fun startNewGame(round: Round) {
         viewModelScope.launch {
             // Ronde tijdelijk inactief maken, tot er weer een nieuwe game gestart wordt
@@ -145,4 +156,5 @@ class RoundViewModel @Inject constructor(
             knockCounter.intValue = 0
         }
     }
+
 }

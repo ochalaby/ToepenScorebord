@@ -3,6 +3,7 @@ package com.chalabysolutions.toepenscorebord.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,7 +14,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -25,8 +28,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -59,6 +65,9 @@ fun HomeScreen(
         onSessionClick = { sessionId ->
             navController.navigate(Screen.Session.createRoute(sessionId))
         },
+        onSessionDeleteClick = { session ->
+            viewModel.deleteSession(session)
+        },
         onSettingsClicked = {
             navController.navigate((Screen.Setting.route))
         },
@@ -74,6 +83,7 @@ fun HomeScreenContent(
     uiState: HomeViewModel.UiState,
     onAddSession: () -> Unit = {},
     onSessionClick: (Int) -> Unit = {},
+    onSessionDeleteClick: (Session) -> Unit = {},
     onSettingsClicked: () -> Unit = {},
     onOverviewClicked: () -> Unit = {}
 ) {
@@ -121,6 +131,9 @@ fun HomeScreenContent(
                                 session = session,
                                 onClick = {
                                     onSessionClick(session.id)
+                                },
+                                onDeleteClick = {
+                                    onSessionDeleteClick(session)
                                 }
                             )
                         }
@@ -132,28 +145,74 @@ fun HomeScreenContent(
 }
 
 @Composable
-fun SessionCard(session: Session, onClick: () -> Unit) {
+fun SessionCard(
+    session: Session,
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
+
+    val showDeleteDialog = remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .padding(8.dp)
-            .fillMaxWidth()
-            .clickable { onClick() },
+            .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            val name = DateTimeUtils.formatDateToDayMonth(session.date)
-            val status = if (session.active) "Actief" else "Afgerond"
-            Text(
-                text = "$name (${status})",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Gestart om: ${DateTimeUtils.formatTimeToSeconds(session.date)}",
-                style = MaterialTheme.typography.bodySmall
-            )
+        Row(
+            modifier = Modifier
+                .padding(12.dp)
+                .clickable { onClick() },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                val name = DateTimeUtils.formatDateToDayMonth(session.date)
+                val status = if (session.active) "Actief" else "Afgerond"
+                Text(
+                    text = "$name ($status)",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "Gestart om: ${DateTimeUtils.formatTimeToSeconds(session.date)}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            IconButton(onClick = {
+                showDeleteDialog.value = true
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Verwijder sessie"
+                )
+            }
         }
+    }
+
+    // Bevestigingsdialoog
+    if (showDeleteDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog.value = false },
+            title = { Text("Verwijderen?") },
+            text = { Text("Weet je zeker dat je deze sessie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteClick()      // Pas de delete toe
+                        showDeleteDialog.value = false
+                    }
+                ) {
+                    Text("Ja, verwijderen", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog.value = false }) {
+                    Text("Annuleren")
+                }
+            }
+        )
     }
 }
 
